@@ -114,7 +114,7 @@ else:
     if pressure_type == "Pressure Difference":
         st.subheader("Pressure Difference (psi)")
         dp_max = np.nanmax(dp_data[layer_selection - 1])
-        dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=dp_max, color_max=round(dp_max, 2))
+        dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=1000, color_max=1000)
         st_folium(dp_map, width=1000, height=750)
     elif pressure_type == "Pressure Gradient":
         st.subheader("Pressure Gradient (psi/ft)")
