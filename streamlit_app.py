@@ -99,13 +99,16 @@ y_coords = np.linspace(miny, maxy, ny)
 max_val = np.max(data)
 norm_top = 1000 if max_val > 1000 else max_val
 
+# Normalize the data for visualization
+data_log_normalized = np.log1p(data / norm_top) / np.log1p(1)
+
 for i in range(ny - 1):
     for j in range(nx - 1):
         value = data[i, j]
         if value > 10:
             center_x, center_y = (x_coords[j] + x_coords[j+1]) / 2, (y_coords[i] + y_coords[i+1]) / 2
             if aoi_polygon.contains(Point(center_x, center_y)):
-                normalized = np.log1p(value) / np.log1p(norm_top)
+                normalized = data_log_normalized[i, j]
                 color = plt.cm.jet(normalized)
                 folium.Rectangle(
                     bounds=[[y_coords[i], x_coords[j]], [y_coords[i+1], x_coords[j+1]]],
