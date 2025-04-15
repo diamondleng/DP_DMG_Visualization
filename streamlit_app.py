@@ -33,10 +33,8 @@ layer_selection = st.sidebar.selectbox(
     format_func=lambda x: f"Layer {x} ({formation_dict[x]})"
 )
 
-if pressure_type == "None":
-    st.info("Select a pressure type from the left panel to begin visualization.")
-else:
-    # File paths
+@st.cache_data
+def load_data():
     AOI_SHAPEFILE = "GreenAOI_Polygon.shp"
     COUNTY_SHAPEFILE = "County.shp"
     SHMAX_SHAPEFILE = "NA_stress_SHmax_orientations.shp"
@@ -44,7 +42,6 @@ else:
     DP_NPY = "DP.npy"
     PG_NPY = "PG.npy"
 
-    # Load data
     gdf = gpd.read_file(AOI_SHAPEFILE).to_crs(epsg=4326)
     county_gdf = gpd.read_file(COUNTY_SHAPEFILE).to_crs(epsg=4326)
     shmax_gdf = gpd.read_file(SHMAX_SHAPEFILE).to_crs(epsg=4326)
@@ -52,12 +49,18 @@ else:
     dp_data = np.load(DP_NPY)
     pg_data = np.load(PG_NPY)
 
+    return gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data
+
+if pressure_type == "None":
+    st.info("Select a pressure type from the left panel to begin visualization.")
+else:
+    gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data = load_data()
+
     minx, miny, maxx, maxy = gdf.total_bounds
     x_coords = np.linspace(minx, maxx, dp_data.shape[2])
     y_coords = np.linspace(miny, maxy, dp_data.shape[1])
     aoi_polygon = gdf.unary_union
 
-    # Helper function to make maps
     def create_map(data_array, label, unit, norm_top, color_max):
         m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9, dragging=False, zoom_control=False)
 
@@ -108,7 +111,6 @@ else:
         m.get_root().html.add_child(folium.Element(legend_html))
         return m
 
-    # Display selected map
     if pressure_type == "Pressure Difference":
         st.subheader("Pressure Difference (psi)")
         dp_max = np.nanmax(dp_data[layer_selection - 1])
