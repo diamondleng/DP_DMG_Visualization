@@ -95,7 +95,9 @@ data = dp_data[layer_idx, :, :]
 ny, nx = data.shape
 x_coords = np.linspace(minx, maxx, nx)
 y_coords = np.linspace(miny, maxy, ny)
-data_norm = data / 1000  # Linear normalization
+
+max_val = np.max(data)
+norm_top = 1000 if max_val > 1000 else max_val
 
 for i in range(ny - 1):
     for j in range(nx - 1):
@@ -103,12 +105,13 @@ for i in range(ny - 1):
         if value > 10:
             center_x, center_y = (x_coords[j] + x_coords[j+1]) / 2, (y_coords[i] + y_coords[i+1]) / 2
             if aoi_polygon.contains(Point(center_x, center_y)):
-                color = plt.cm.jet(data_norm[i, j])
+                normalized = np.log1p(value) / np.log1p(norm_top)
+                color = plt.cm.jet(normalized)
                 folium.Rectangle(
                     bounds=[[y_coords[i], x_coords[j]], [y_coords[i+1], x_coords[j+1]]],
                     fill=True,
                     fill_color=f"#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}",
-                    fill_opacity=data_norm[i, j],
+                    fill_opacity=normalized,
                     stroke=False
                 ).add_to(m)
 
