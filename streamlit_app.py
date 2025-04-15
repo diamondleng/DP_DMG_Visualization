@@ -82,9 +82,9 @@ else:
         layer_data = data_array[layer_selection - 1, :, :]
         if use_log:
             data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
-            threshold_min, threshold_max = 10, 1000
+            threshold_min, min_bar, threshold_max = 10, 0, 1000
         else:
-            threshold_min, threshold_max = 0.43, 0.5
+            threshold_min, min_bar, threshold_max = 0.43, 0.43, 0.5
             data_normalized = np.log1p((layer_data - threshold_min) / (threshold_max - threshold_min))/ np.log1p(1)
 
         ny, nx = layer_data.shape
@@ -111,10 +111,10 @@ else:
         <div style='background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); 
              height: 15px; width: 100%; margin-bottom: 5px;'></div>
         <div style='display: flex; justify-content: space-between; font-size: 12px;'>
-          <span>{threshold_min:.2f}</span>
-          <span>{(threshold_min + (threshold_max - threshold_min) * 0.25):.2f}</span>
-          <span>{(threshold_min + (threshold_max - threshold_min) * 0.5):.2f}</span>
-          <span>{(threshold_min + (threshold_max - threshold_min) * 0.75):.2f}</span>
+          <span>{min_bar:.2f}</span>
+          <span>{(min_bar + (threshold_max - min_bar) * 0.25):.2f}</span>
+          <span>{(min_bar + (threshold_max - min_bar) * 0.5):.2f}</span>
+          <span>{(min_bar + (threshold_max - min_bar) * 0.75):.2f}</span>
           <span>{threshold_max:.2f}</span>
         </div>
         <br>
