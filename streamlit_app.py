@@ -79,7 +79,7 @@ else:
                 folium.CircleMarker(location=[lat, lon], radius=mag**2, color='black', fill=True, fill_color=color, fill_opacity=0.6).add_to(m)
 
         layer_data = data_array[layer_selection - 1, :, :]
-        data_log_normalized = layer_data / norm_top
+        data_log_normalized = log1p(layer_data / norm_top)/log1p(1)
         ny, nx = layer_data.shape
 
         for i in range(ny - 1):
