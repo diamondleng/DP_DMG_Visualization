@@ -4,5 +4,6 @@ folium
 numpy
 pandas
 matplotlib
-streamlit-folium
 shapely
+streamlit-folium
+branca
