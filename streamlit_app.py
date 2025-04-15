@@ -2,7 +2,6 @@
 import streamlit as st
 import geopandas as gpd
 import folium
-from folium.plugins import Fullscreen
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -49,10 +48,18 @@ earthquake_df = pd.read_csv(EARTHQUAKE_CSV)
 dp_data = np.load(PRESSURE_NPY)
 dp_data = np.where(dp_data > 1000, 1000, dp_data)
 
-# Initialize Folium map
+# Initialize Folium map with interaction disabled
 minx, miny, maxx, maxy = gdf.total_bounds
-m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=10)
-Fullscreen().add_to(m)
+m = folium.Map(
+    location=[(miny + maxy) / 2, (minx + maxx) / 2],
+    zoom_start=10,
+    dragging=False,
+    zoom_control=False,
+    scrollWheelZoom=False,
+    doubleClickZoom=False,
+    box_zoom=False,
+    touchZoom=False
+)
 
 # AOI and County boundaries
 folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'dashArray': '5,5', 'fillOpacity': 0}).add_to(m)
