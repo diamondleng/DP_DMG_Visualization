@@ -7,14 +7,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from shapely.geometry import Point
 from streamlit_folium import st_folium
-from branca.element import Element
 
 # Streamlit setup
 st.set_page_config(layout='wide', page_title="Pressure Visualization Dashboard")
 st.title("Pressure Map with Induced Seismicity")
 
 # Sidebar selection
-pressure_type = st.sidebar.radio("Select Pressure Type:", ["None", "Pressure Difference", "Pressure Gradient"])
+pressure_type = st.sidebar.radio("Select Pressure Type:", ["None", "Pressure Difference", "Pressure Gradient", "Both Pressure Difference and Pressure Gradient"])
 formation_dict = {
     1: "Bell Canyon",
     2: "Bell Canyon",
@@ -63,7 +62,7 @@ else:
     y_coords = np.linspace(miny, maxy, dp_data.shape[1])
     aoi_polygon = gdf.unary_union
 
-    def create_map(data_array, label, unit, norm_top, color_max, use_log):
+    def create_map(data_array, label, unit, norm_top, use_log):
         m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9, dragging=False, zoom_control=False)
 
         folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'dashArray': '5,5'}).add_to(m)
@@ -89,7 +88,6 @@ else:
             data_normalized = (layer_data - threshold_min) / (threshold_max - threshold_min)
 
         ny, nx = layer_data.shape
-
         for i in range(ny - 1):
             for j in range(nx - 1):
                 val = layer_data[i, j]
@@ -105,50 +103,55 @@ else:
                             stroke=False
                         ).add_to(m)
 
-        if use_log:
-            scale_min, scale_max = 0, norm_top
-        else:
-            scale_min, scale_max = threshold_min, threshold_max
-
         legend_html = f"""
-        <div style="
-            position: fixed;
-            bottom: 50px;
-            left: 20px;
-            width: 260px;
-            background-color: white;
-            padding: 10px;
-            border:2px solid grey;
-            z-index:9999;
-            font-size:14px;
-            color: black;
-        ">
+        <div style='width: 260px; background-color: white; padding: 10px; 
+             border:2px solid grey; font-size:14px; color: black;'>
         <b>Legend</b><br>
         {label} ({unit}):<br>
-        <div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%; margin-bottom: 5px;"></div>
-        <div style="display: flex; justify-content: space-between; font-size: 12px; color: black;">
-          <span>{scale_min:.2f}</span>
-          <span>{(scale_min + (scale_max - scale_min) * 0.25):.2f}</span>
-          <span>{(scale_min + (scale_max - scale_min) * 0.5):.2f}</span>
-          <span>{(scale_min + (scale_max - scale_min) * 0.75):.2f}</span>
-          <span>{scale_max:.2f}</span>
+        <div style='background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); 
+             height: 15px; width: 100%; margin-bottom: 5px;'></div>
+        <div style='display: flex; justify-content: space-between; font-size: 12px;'>
+          <span>{threshold_min:.2f}</span>
+          <span>{(threshold_min + (threshold_max - threshold_min) * 0.25):.2f}</span>
+          <span>{(threshold_min + (threshold_max - threshold_min) * 0.5):.2f}</span>
+          <span>{(threshold_min + (threshold_max - threshold_min) * 0.75):.2f}</span>
+          <span>{threshold_max:.2f}</span>
         </div>
         <br>
-        <i style="color:grey;">●</i> Earthquake Magnitude 3.0 - 3.5<br>
-        <i style="color:red;">●</i> Earthquake Magnitude > 3.5<br>
-        <span style="color:grey;">━</span> SH_Max Orientation
+        <i style='color:grey;'>●</i> Earthquake Magnitude 3.0 - 3.5<br>
+        <i style='color:red;'>●</i> Earthquake Magnitude > 3.5<br>
+        <span style='color:grey;'>━</span> SH_Max Orientation
         </div>
         """
-        m.get_root().html.add_child(Element(legend_html))
+        folium.Marker(
+            location=[miny + 0.05, minx + 0.05],
+            icon=folium.DivIcon(html=legend_html)
+        ).add_to(m)
         return m
 
     if pressure_type == "Pressure Difference":
         st.subheader("Pressure Difference (psi)")
         norm_top = 1000
-        dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, color_max=norm_top, use_log=True)
+        dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
         st_folium(dp_map, width=1000, height=750)
+
     elif pressure_type == "Pressure Gradient":
         st.subheader("Pressure Gradient (psi/ft)")
         norm_top = 0.5
-        pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, color_max=norm_top, use_log=False)
+        pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
         st_folium(pg_map, width=1000, height=750)
+
+    elif pressure_type == "Both Pressure Difference and Pressure Gradient":
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("Pressure Difference (psi)")
+            norm_top = 1000
+            dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
+            st_folium(dp_map, width=500, height=600)
+
+        with col2:
+            st.subheader("Pressure Gradient (psi/ft)")
+            norm_top = 0.5
+            pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
+            st_folium(pg_map, width=500, height=600)
