@@ -82,7 +82,7 @@ else:
         layer_data = data_array[layer_selection - 1, :, :]
         if use_log:
             data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
-            threshold_min, threshold_max = 10, float('inf')
+            threshold_min, threshold_max = 10, 1000
         else:
             threshold_min, threshold_max = 0.43, 0.5
             data_normalized = np.log1p((layer_data - threshold_min) / (threshold_max - threshold_min))/ np.log1p(1)
@@ -133,13 +133,13 @@ else:
         st.subheader("Pressure Difference (psi)")
         norm_top = 1000
         dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
-        st_folium(dp_map, width=1000, height=750)
+        st_folium(dp_map, width=1300, height=750)
 
     elif pressure_type == "Pressure Gradient":
         st.subheader("Pressure Gradient (psi/ft)")
         norm_top = 0.5
         pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
-        st_folium(pg_map, width=1000, height=750)
+        st_folium(pg_map, width=1300, height=750)
 
     elif pressure_type == "Both Pressure Difference and Pressure Gradient":
         col1, col2 = st.columns(2)
@@ -148,10 +148,10 @@ else:
             st.subheader("Pressure Difference (psi)")
             norm_top = 1000
             dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
-            st_folium(dp_map, width=500, height=600)
+            st_folium(dp_map, width=800, height=750)
 
         with col2:
             st.subheader("Pressure Gradient (psi/ft)")
             norm_top = 0.5
             pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
-            st_folium(pg_map, width=500, height=600)
+            st_folium(pg_map, width=800, height=750)
