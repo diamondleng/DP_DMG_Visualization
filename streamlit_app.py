@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from shapely.geometry import Point
 from streamlit_folium import st_folium
+from branca.element import Template, MacroElement
 
 # Streamlit setup
 st.set_page_config(layout='wide', page_title="Pressure Difference Visualization")
@@ -111,25 +112,40 @@ for i in range(ny - 1):
                     stroke=False
                 ).add_to(m)
 
-# Legend with color bar and ticks positioned at southwest AOI corner
-legend_html = f'''
-<div style="position: absolute; bottom: 20px; left: 20px; width: 250px; background-color: white; padding: 10px; border:2px solid grey; z-index:9999;">
+# Legend using MacroElement
+legend_template = """
+{% macro html(this, kwargs) %}
+<div style="
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 260px;
+    background-color: white;
+    padding: 10px;
+    border:2px solid grey;
+    z-index:9999;
+    font-size:14px;
+">
 <b>Legend</b><br>
 Pressure Difference (psi):<br>
-<div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%;"></div>
-<div style="display: flex; justify-content: space-between;">
+<div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%; margin-bottom: 5px;"></div>
+<div style="display: flex; justify-content: space-between; font-size: 12px;">
   <span>0</span>
   <span>250</span>
   <span>500</span>
   <span>750</span>
   <span>1000</span>
 </div>
+<br>
 <i style="color:grey;">●</i> Earthquake Magnitude 3.0 - 3.5<br>
 <i style="color:red;">●</i> Earthquake Magnitude > 3.5<br>
 <span style="color:grey;">━</span> SH_Max Orientation
 </div>
-'''
-m.get_root().html.add_child(folium.Element(legend_html))
+{% endmacro %}
+"""
+legend = MacroElement()
+legend._template = Template(legend_template)
+m.get_root().add_child(legend)
 
 # Display the map
 st_folium(m, width=1200, height=800)
