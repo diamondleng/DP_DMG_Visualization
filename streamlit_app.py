@@ -81,15 +81,17 @@ else:
         layer_data = data_array[layer_selection - 1, :, :]
         if use_log:
             data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
+            threshold_min, threshold_max = 10, float('inf')
         else:
-            data_normalized = layer_data / norm_top
+            threshold_min, threshold_max = 0.43, 0.5
+            data_normalized = (layer_data - threshold_min) / (threshold_max - threshold_min)
 
         ny, nx = layer_data.shape
 
         for i in range(ny - 1):
             for j in range(nx - 1):
                 val = layer_data[i, j]
-                if val > 10:
+                if threshold_min < val <= threshold_max:
                     center = Point((x_coords[j] + x_coords[j+1]) / 2, (y_coords[i] + y_coords[i+1]) / 2)
                     if aoi_polygon.contains(center):
                         color = plt.cm.jet(data_normalized[i, j])
@@ -100,6 +102,11 @@ else:
                             fill_opacity=0.8,
                             stroke=False
                         ).add_to(m)
+
+        if use_log:
+            scale_min, scale_max = 0, norm_top
+        else:
+            scale_min, scale_max = threshold_min, threshold_max
 
         legend_html = f"""
         <div style="
@@ -118,11 +125,11 @@ else:
         {label} ({unit}):<br>
         <div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%; margin-bottom: 5px;"></div>
         <div style="display: flex; justify-content: space-between; font-size: 12px; color: black;">
-          <span>0</span>
-          <span>{round(norm_top * 0.25):.0f}</span>
-          <span>{round(norm_top * 0.5):.0f}</span>
-          <span>{round(norm_top * 0.75):.0f}</span>
-          <span>{round(norm_top):.0f}</span>
+          <span>{scale_min:.2f}</span>
+          <span>{(scale_min + (scale_max - scale_min) * 0.25):.2f}</span>
+          <span>{(scale_min + (scale_max - scale_min) * 0.5):.2f}</span>
+          <span>{(scale_min + (scale_max - scale_min) * 0.75):.2f}</span>
+          <span>{scale_max:.2f}</span>
         </div>
         <br>
         <i style="color:grey;">●</i> Earthquake Magnitude 3.0 - 3.5<br>
