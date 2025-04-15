@@ -10,10 +10,10 @@ from streamlit_folium import st_folium
 from branca.element import Template, MacroElement
 
 # Streamlit setup
-st.set_page_config(layout='wide', page_title="Pressure Difference Visualization")
-st.title("Pressure Difference and Induced Seismicity Visualization")
+st.set_page_config(layout='wide', page_title="Pressure Visualization Dashboard")
+st.title("Pressure Difference and Pressure Gradient Maps with Induced Seismicity")
 
-# Formation mapping
+# Sidebar selection
 formation_dict = {
     1: "Bell Canyon",
     2: "Bell Canyon",
@@ -26,8 +26,6 @@ formation_dict = {
     11: "Brushy Canyon",
     12: "Brushy Canyon"
 }
-
-# Sidebar selection
 layer_selection = st.sidebar.selectbox(
     "Select Layer to Visualize:",
     options=[1, 2, 3, 4, 7, 8, 9, 10, 11, 12],
@@ -39,120 +37,84 @@ AOI_SHAPEFILE = "GreenAOI_Polygon.shp"
 COUNTY_SHAPEFILE = "County.shp"
 SHMAX_SHAPEFILE = "NA_stress_SHmax_orientations.shp"
 EARTHQUAKE_CSV = "texnet_events.csv"
-PRESSURE_NPY = "DP.npy"
+DP_NPY = "DP.npy"
+PG_NPY = "PG.npy"
 
-# Load spatial data
+# Load data
 gdf = gpd.read_file(AOI_SHAPEFILE).to_crs(epsg=4326)
 county_gdf = gpd.read_file(COUNTY_SHAPEFILE).to_crs(epsg=4326)
 shmax_gdf = gpd.read_file(SHMAX_SHAPEFILE).to_crs(epsg=4326)
 earthquake_df = pd.read_csv(EARTHQUAKE_CSV)
-dp_data = np.load(PRESSURE_NPY)
-dp_data = np.where(dp_data > 1000, 1000, dp_data)
+dp_data = np.load(DP_NPY)
+pg_data = np.load(PG_NPY)
 
-# Initialize Folium map with interaction disabled
 minx, miny, maxx, maxy = gdf.total_bounds
-m = folium.Map(
-    location=[(miny + maxy) / 2, (minx + maxx) / 2],
-    zoom_start=9,
-    dragging=False,
-    zoom_control=False,
-    scrollWheelZoom=False,
-    doubleClickZoom=False,
-    box_zoom=False,
-    touchZoom=False
-)
-
-# AOI and County boundaries
-folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'dashArray': '5,5', 'fillOpacity': 0}).add_to(m)
-folium.GeoJson(county_gdf, style_function=lambda x: {'color': 'black', 'weight': 1, 'fillOpacity': 0}).add_to(m)
-
-# County labels in black color
-for _, row in county_gdf.iterrows():
-    centroid = row.geometry.centroid
-    folium.Marker(
-        location=[centroid.y, centroid.x],
-        icon=folium.DivIcon(html=f'<div style="font-size: 12pt; color:black;">{row["CNTY_NM"]}</div>')
-    ).add_to(m)
-
-# Earthquake visualization
+x_coords = np.linspace(minx, maxx, dp_data.shape[2])
+y_coords = np.linspace(miny, maxy, dp_data.shape[1])
 aoi_polygon = gdf.unary_union
-for _, row in earthquake_df.iterrows():
-    lat, lon, mag = row['Latitude (WGS84)'], row['Longitude (WGS84)'], row['Local Magnitude']
-    if aoi_polygon.contains(Point(lon, lat)) and mag >= 3.0:
-        color = 'red' if mag >= 3.5 else 'grey'
-        folium.CircleMarker(
-            location=[lat, lon],
-            radius=mag**2,
-            color='black',
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.6
+
+# Helper function to make maps
+def create_map(data_array, label, unit, norm_top, color_max):
+    m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9, dragging=False, zoom_control=False)
+    
+    folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'dashArray': '5,5'}).add_to(m)
+    folium.GeoJson(county_gdf, style_function=lambda x: {'color': 'black', 'weight': 1}).add_to(m)
+    for _, row in county_gdf.iterrows():
+        centroid = row.geometry.centroid
+        folium.Marker(
+            location=[centroid.y, centroid.x],
+            icon=folium.DivIcon(html=f'<div style="font-size: 12pt; color:black;">{row["CNTY_NM"]}</div>')
         ).add_to(m)
+    for _, row in earthquake_df.iterrows():
+        lat, lon, mag = row['Latitude (WGS84)'], row['Longitude (WGS84)'], row['Local Magnitude']
+        if aoi_polygon.contains(Point(lon, lat)) and mag >= 3.0:
+            color = 'red' if mag >= 3.5 else 'grey'
+            folium.CircleMarker(location=[lat, lon], radius=mag**2, color='black', fill=True, fill_color=color, fill_opacity=0.6).add_to(m)
 
-# Pressure visualization
-layer_idx = layer_selection - 1
-data = dp_data[layer_idx, :, :]
-ny, nx = data.shape
-x_coords = np.linspace(minx, maxx, nx)
-y_coords = np.linspace(miny, maxy, ny)
+    layer_data = data_array[layer_selection - 1, :, :]
+    data_log_normalized = layer_data / norm_top
+    ny, nx = layer_data.shape
 
-max_val = np.max(data)
-norm_top = 1000 if max_val > 1000 else max_val
+    for i in range(ny - 1):
+        for j in range(nx - 1):
+            val = layer_data[i, j]
+            if val > 10:
+                center = Point((x_coords[j] + x_coords[j+1]) / 2, (y_coords[i] + y_coords[i+1]) / 2)
+                if aoi_polygon.contains(center):
+                    color = plt.cm.jet(data_log_normalized[i, j])
+                    folium.Rectangle(
+                        bounds=[[y_coords[i], x_coords[j]], [y_coords[i+1], x_coords[j+1]]],
+                        fill=True,
+                        fill_color=f"#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}",
+                        fill_opacity=0.8,
+                        stroke=False
+                    ).add_to(m)
 
-# Normalize the data for visualization
-data_log_normalized = np.log1p(data / norm_top) / np.log1p(1)
+    legend_html = f'''
+    <div style="position: fixed; bottom: 20px; left: 20px; width: 250px; background-color: white; padding: 10px; border:2px solid grey; z-index:9999;">
+    <b>Legend</b><br>
+    {label} ({unit}):<br>
+    <div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%;"></div>
+    0 <span style="float:right;">{color_max}</span><br>
+    <i style="color:grey;">●</i> Earthquake Magnitude 3.0 - 3.5<br>
+    <i style="color:red;">●</i> Earthquake Magnitude > 3.5<br>
+    <span style="color:grey;">━</span> SH_Max Orientation
+    </div>
+    '''
+    m.get_root().html.add_child(folium.Element(legend_html))
+    return m
 
-for i in range(ny - 1):
-    for j in range(nx - 1):
-        value = data[i, j]
-        if value > 10:
-            center_x, center_y = (x_coords[j] + x_coords[j+1]) / 2, (y_coords[i] + y_coords[i+1]) / 2
-            if aoi_polygon.contains(Point(center_x, center_y)):
-                normalized = data_log_normalized[i, j]
-                color = plt.cm.jet(normalized)
-                folium.Rectangle(
-                    bounds=[[y_coords[i], x_coords[j]], [y_coords[i+1], x_coords[j+1]]],
-                    fill=True,
-                    fill_color=f"#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}",
-                    fill_opacity=normalized,
-                    stroke=False
-                ).add_to(m)
+# Display maps side by side
+col1, col2 = st.columns(2)
 
-# Legend using MacroElement
-legend_template = """
-{% macro html(this, kwargs) %}
-<div style="
-    position: fixed;
-    bottom: 50px;
-    left: 20px;
-    width: 260px;
-    background-color: white;
-    padding: 10px;
-    border:2px solid grey;
-    z-index:9999;
-    font-size:14px;
-    color: black;
-">
-<b>Legend</b><br>
-Pressure Difference (psi):<br>
-<div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%; margin-bottom: 5px;"></div>
-<div style="display: flex; justify-content: space-between; font-size: 12px; color: black;">
-  <span>0</span>
-  <span>250</span>
-  <span>500</span>
-  <span>750</span>
-  <span>1000</span>
-</div>
-<br>
-<i style="color:grey;">●</i> Earthquake Magnitude 3.0 - 3.5<br>
-<i style="color:red;">●</i> Earthquake Magnitude > 3.5<br>
-<span style="color:grey;">━</span> SH_Max Orientation
-</div>
-{% endmacro %}
-"""
-legend = MacroElement()
-legend._template = Template(legend_template)
-m.get_root().add_child(legend)
+with col1:
+    st.subheader("Pressure Difference (psi)")
+    dp_max = np.nanmax(dp_data[layer_selection - 1])
+    dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=1000, color_max=1000)
+    st_folium(dp_map, width=600, height=700)
 
-# Display the map
-st_folium(m, width=1200, height=800)
+with col2:
+    st.subheader("Pressure Gradient (psi/ft)")
+    pg_max = np.nanmax(pg_data[layer_selection - 1])
+    pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, color_max=0.5)
+    st_folium(pg_map, width=600, height=700)
