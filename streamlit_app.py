@@ -58,12 +58,12 @@ Fullscreen().add_to(m)
 folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'dashArray': '5,5', 'fillOpacity': 0}).add_to(m)
 folium.GeoJson(county_gdf, style_function=lambda x: {'color': 'black', 'weight': 1, 'fillOpacity': 0}).add_to(m)
 
-# County labels
+# County labels in black color
 for _, row in county_gdf.iterrows():
     centroid = row.geometry.centroid
     folium.Marker(
         location=[centroid.y, centroid.x],
-        icon=folium.DivIcon(html=f'<div style="font-size: 12pt;">{row["CNTY_NM"]}</div>')
+        icon=folium.DivIcon(html=f'<div style="font-size: 12pt; color:black;">{row["CNTY_NM"]}</div>')
     ).add_to(m)
 
 # Earthquake visualization
@@ -104,9 +104,9 @@ for i in range(ny - 1):
                     stroke=False
                 ).add_to(m)
 
-# Legend with color bar and ticks
-legend_html = '''
-<div style="position: fixed; bottom: 20px; left: 20px; width: 250px; background-color: white; padding: 10px; border:2px solid grey; z-index:9999;">
+# Legend with color bar and ticks positioned at southwest AOI corner
+legend_html = f'''
+<div style="position: absolute; bottom: 20px; left: 20px; width: 250px; background-color: white; padding: 10px; border:2px solid grey; z-index:9999;">
 <b>Legend</b><br>
 Pressure Difference (psi):<br>
 <div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%;"></div>
