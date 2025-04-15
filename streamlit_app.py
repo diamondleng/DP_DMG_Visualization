@@ -117,7 +117,7 @@ legend_template = """
 {% macro html(this, kwargs) %}
 <div style="
     position: fixed;
-    bottom: 20px;
+    bottom: 50px;
     left: 20px;
     width: 260px;
     background-color: white;
@@ -125,11 +125,12 @@ legend_template = """
     border:2px solid grey;
     z-index:9999;
     font-size:14px;
+    color: black;
 ">
 <b>Legend</b><br>
 Pressure Difference (psi):<br>
 <div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%; margin-bottom: 5px;"></div>
-<div style="display: flex; justify-content: space-between; font-size: 12px;">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: black;">
   <span>0</span>
   <span>250</span>
   <span>500</span>
