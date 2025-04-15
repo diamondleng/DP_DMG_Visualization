@@ -97,18 +97,41 @@ else:
                             stroke=False
                         ).add_to(m)
 
-        legend_html = f'''
-        <div style="position: fixed; bottom: 20px; left: 20px; width: 250px; background-color: white; padding: 10px; border:2px solid grey; z-index:9999;">
+        # Legend using MacroElement
+        legend_template = f"""
+        {{% macro html(this, kwargs) %}}
+        <div style="
+            position: fixed;
+            bottom: 50px;
+            left: 20px;
+            width: 260px;
+            background-color: white;
+            padding: 10px;
+            border:2px solid grey;
+            z-index:9999;
+            font-size:14px;
+            color: black;
+        ">
         <b>Legend</b><br>
-        {label} ({unit}):<br>
-        <div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%;"></div>
-        0 <span style="float:right;">{color_max}</span><br>
+        Pressure Difference (psi):<br>
+        <div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%; margin-bottom: 5px;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: black;">
+          <span>0</span>
+          <span>{round(norm_top * 0.25):.0f}</span>
+          <span>{round(norm_top * 0.5):.0f}</span>
+          <span>{round(norm_top * 0.75):.0f}</span>
+          <span>{round(norm_top):.0f}</span>
+        </div>
+        <br>
         <i style="color:grey;">●</i> Earthquake Magnitude 3.0 - 3.5<br>
         <i style="color:red;">●</i> Earthquake Magnitude > 3.5<br>
         <span style="color:grey;">━</span> SH_Max Orientation
         </div>
-        '''
-        m.get_root().html.add_child(folium.Element(legend_html))
+        {{% endmacro %}}
+        """
+        legend = MacroElement()
+        legend._template = Template(legend_template)
+        m.get_root().add_child(legend)
         return m
 
     if pressure_type == "Pressure Difference":
