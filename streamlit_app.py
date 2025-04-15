@@ -11,9 +11,10 @@ from branca.element import Template, MacroElement
 
 # Streamlit setup
 st.set_page_config(layout='wide', page_title="Pressure Visualization Dashboard")
-st.title("Pressure Difference and Pressure Gradient Maps with Induced Seismicity")
+st.title("Pressure Map with Induced Seismicity")
 
 # Sidebar selection
+pressure_type = st.sidebar.radio("Select Pressure Type:", ["Pressure Difference", "Pressure Gradient"])
 formation_dict = {
     1: "Bell Canyon",
     2: "Bell Canyon",
@@ -104,17 +105,22 @@ def create_map(data_array, label, unit, norm_top, color_max):
     m.get_root().html.add_child(folium.Element(legend_html))
     return m
 
-# Display maps side by side
-col1, col2 = st.columns(2)
+# Display single map based on user selection
+col1, col2 = st.columns([1, 3])
 
 with col1:
-    st.subheader("Pressure Difference (psi)")
-    dp_max = np.nanmax(dp_data[layer_selection - 1])
-    dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=1000, color_max=1000)
-    st_folium(dp_map, width=600, height=700)
+    st.subheader("Controls")
+    st.markdown(f"**Selected Pressure Type:** {pressure_type}")
+    st.markdown(f"**Selected Layer:** Layer {layer_selection} ({formation_dict[layer_selection]})")
 
 with col2:
-    st.subheader("Pressure Gradient (psi/ft)")
-    pg_max = np.nanmax(pg_data[layer_selection - 1])
-    pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, color_max=0.5)
-    st_folium(pg_map, width=600, height=700)
+    if pressure_type == "Pressure Difference":
+        st.subheader("Pressure Difference (psi)")
+        dp_max = np.nanmax(dp_data[layer_selection - 1])
+        dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=dp_max, color_max=round(dp_max, 2))
+        st_folium(dp_map, width=900, height=750)
+    else:
+        st.subheader("Pressure Gradient (psi/ft)")
+        pg_max = np.nanmax(pg_data[layer_selection - 1])
+        pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, color_max=0.5)
+        st_folium(pg_map, width=900, height=750)
