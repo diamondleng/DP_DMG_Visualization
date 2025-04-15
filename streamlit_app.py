@@ -124,7 +124,7 @@ else:
         </div>
         """
         folium.Marker(
-            location=[miny + 0.05, minx + 0.05],
+            location=[miny + 0.05, minx - 0.5],
             icon=folium.DivIcon(html=legend_html)
         ).add_to(m)
         return m
