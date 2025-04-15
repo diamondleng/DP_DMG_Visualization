@@ -63,7 +63,7 @@ else:
     aoi_polygon = gdf.unary_union
 
     def create_map(data_array, label, unit, norm_top, use_log):
-        m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9, dragging=False, zoom_control=False)
+        m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9, dragging=True, zoom_control=True)
 
         folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'dashArray': '5,5'}).add_to(m)
         folium.GeoJson(county_gdf, style_function=lambda x: {'color': 'black', 'weight': 1}).add_to(m)
@@ -148,10 +148,10 @@ else:
             st.subheader("Pressure Difference (psi)")
             norm_top = 1000
             dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
-            st_folium(dp_map, width=800, height=750)
+            st_folium(dp_map, width=800, height=500)
 
         with col2:
             st.subheader("Pressure Gradient (psi/ft)")
             norm_top = 0.5
             pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
-            st_folium(pg_map, width=800, height=750)
+            st_folium(pg_map, width=800, height=500)
