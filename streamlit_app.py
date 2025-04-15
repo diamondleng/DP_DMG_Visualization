@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from shapely.geometry import Point
 from streamlit_folium import st_folium
-from branca.element import Template, MacroElement
+from branca.element import Element
 
 # Streamlit setup
 st.set_page_config(layout='wide', page_title="Pressure Visualization Dashboard")
@@ -61,7 +61,7 @@ else:
     y_coords = np.linspace(miny, maxy, dp_data.shape[1])
     aoi_polygon = gdf.unary_union
 
-    def create_map(data_array, label, unit, norm_top, color_max):
+    def create_map(data_array, label, unit, norm_top, color_max, use_log):
         m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9, dragging=False, zoom_control=False)
 
         folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'dashArray': '5,5'}).add_to(m)
@@ -79,7 +79,11 @@ else:
                 folium.CircleMarker(location=[lat, lon], radius=mag**2, color='black', fill=True, fill_color=color, fill_opacity=0.6).add_to(m)
 
         layer_data = data_array[layer_selection - 1, :, :]
-        data_log_normalized = layer_data / norm_top
+        if use_log:
+            data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
+        else:
+            data_normalized = layer_data / norm_top
+
         ny, nx = layer_data.shape
 
         for i in range(ny - 1):
@@ -88,7 +92,7 @@ else:
                 if val > 10:
                     center = Point((x_coords[j] + x_coords[j+1]) / 2, (y_coords[i] + y_coords[i+1]) / 2)
                     if aoi_polygon.contains(center):
-                        color = plt.cm.jet(data_log_normalized[i, j])
+                        color = plt.cm.jet(data_normalized[i, j])
                         folium.Rectangle(
                             bounds=[[y_coords[i], x_coords[j]], [y_coords[i+1], x_coords[j+1]]],
                             fill=True,
@@ -97,27 +101,45 @@ else:
                             stroke=False
                         ).add_to(m)
 
-        legend_html = f'''
-        <div style="position: fixed; bottom: 20px; left: 20px; width: 250px; background-color: white; padding: 10px; border:2px solid grey; z-index:9999;">
+        legend_html = f"""
+        <div style="
+            position: fixed;
+            bottom: 50px;
+            left: 20px;
+            width: 260px;
+            background-color: white;
+            padding: 10px;
+            border:2px solid grey;
+            z-index:9999;
+            font-size:14px;
+            color: black;
+        ">
         <b>Legend</b><br>
         {label} ({unit}):<br>
-        <div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%;"></div>
-        0 <span style="float:right;">{color_max}</span><br>
+        <div style="background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%; margin-bottom: 5px;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: black;">
+          <span>0</span>
+          <span>{round(norm_top * 0.25):.0f}</span>
+          <span>{round(norm_top * 0.5):.0f}</span>
+          <span>{round(norm_top * 0.75):.0f}</span>
+          <span>{round(norm_top):.0f}</span>
+        </div>
+        <br>
         <i style="color:grey;">●</i> Earthquake Magnitude 3.0 - 3.5<br>
         <i style="color:red;">●</i> Earthquake Magnitude > 3.5<br>
         <span style="color:grey;">━</span> SH_Max Orientation
         </div>
-        '''
-        m.get_root().html.add_child(folium.Element(legend_html))
+        """
+        m.get_root().html.add_child(Element(legend_html))
         return m
 
     if pressure_type == "Pressure Difference":
         st.subheader("Pressure Difference (psi)")
-        dp_max = np.nanmax(dp_data[layer_selection - 1])
-        dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=1000, color_max=1000)
+        norm_top = 1000
+        dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, color_max=norm_top, use_log=True)
         st_folium(dp_map, width=1000, height=750)
     elif pressure_type == "Pressure Gradient":
         st.subheader("Pressure Gradient (psi/ft)")
-        pg_max = np.nanmax(pg_data[layer_selection - 1])
-        pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, color_max=0.5)
+        norm_top = 0.5
+        pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, color_max=norm_top, use_log=False)
         st_folium(pg_map, width=1000, height=750)
