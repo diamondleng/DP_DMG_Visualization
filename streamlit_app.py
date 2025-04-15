@@ -47,7 +47,9 @@ def load_data():
     shmax_gdf = gpd.read_file(SHMAX_SHAPEFILE).to_crs(epsg=4326)
     earthquake_df = pd.read_csv(EARTHQUAKE_CSV)
     dp_data = np.load(DP_NPY)
+    dp_data = np.where(dp_data > 1000, 1000, dp_data)
     pg_data = np.load(PG_NPY)
+    pg_data = np.where(dp_data > 0.5, 0.5, dp_data)
 
     return gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data
 
