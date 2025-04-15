@@ -85,7 +85,7 @@ else:
             threshold_min, threshold_max = 10, float('inf')
         else:
             threshold_min, threshold_max = 0.43, 0.5
-            data_normalized = (layer_data - threshold_min) / (threshold_max - threshold_min)
+            data_normalized = np.log1p((layer_data - threshold_min) / (threshold_max - threshold_min))/ np.log1p(1)
 
         ny, nx = layer_data.shape
         for i in range(ny - 1):
