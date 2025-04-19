@@ -63,7 +63,7 @@ else:
     aoi_polygon = gdf.unary_union
 
     def create_map(data_array, label, unit, norm_top, use_log):
-        m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9, dragging=True, zoom_control=True)
+        m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9, dragging=False, zoom_control=False)
 
         folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'dashArray': '5,5'}).add_to(m)
         folium.GeoJson(county_gdf, style_function=lambda x: {'color': 'black', 'weight': 1}).add_to(m)
@@ -82,10 +82,10 @@ else:
         layer_data = data_array[layer_selection - 1, :, :]
         if use_log:
             data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
-            threshold_min, min_bar, threshold_max = 10, 0, 1000
+            threshold_min, threshold_max = 10, 1000
         else:
-            threshold_min, min_bar, threshold_max = 0.43, 0.43, 0.5
-            data_normalized = np.log1p((layer_data - threshold_min) / (threshold_max - threshold_min))/ np.log1p(1)
+            threshold_min, threshold_max = 0.43, 0.5
+            data_normalized = (layer_data - threshold_min) / (threshold_max - threshold_min)
 
         ny, nx = layer_data.shape
         for i in range(ny - 1):
@@ -111,10 +111,10 @@ else:
         <div style='background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); 
              height: 15px; width: 100%; margin-bottom: 5px;'></div>
         <div style='display: flex; justify-content: space-between; font-size: 12px;'>
-          <span>{min_bar:.2f}</span>
-          <span>{(min_bar + (threshold_max - min_bar) * 0.25):.2f}</span>
-          <span>{(min_bar + (threshold_max - min_bar) * 0.5):.2f}</span>
-          <span>{(min_bar + (threshold_max - min_bar) * 0.75):.2f}</span>
+          <span>{threshold_min:.2f}</span>
+          <span>{(threshold_min + (threshold_max - threshold_min) * 0.25):.2f}</span>
+          <span>{(threshold_min + (threshold_max - threshold_min) * 0.5):.2f}</span>
+          <span>{(threshold_min + (threshold_max - threshold_min) * 0.75):.2f}</span>
           <span>{threshold_max:.2f}</span>
         </div>
         <br>
@@ -124,34 +124,60 @@ else:
         </div>
         """
         folium.Marker(
-            location=[miny + 0.05, minx - 0.6],
+            location=[miny + 0.05, minx - 0.5],
             icon=folium.DivIcon(html=legend_html)
         ).add_to(m)
         return m
 
+    def plot_static(data_array, label, unit, norm_top, use_log):
+        layer_data = data_array[layer_selection - 1, :, :]
+        if use_log:
+            threshold_min, threshold_max = 10, 1000
+            data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
+        else:
+            threshold_min, threshold_max = 0.43, 0.5
+            data_normalized = np.clip(layer_data, threshold_min, threshold_max)
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+        cax = ax.imshow(data_normalized, cmap='jet', vmin=threshold_min, vmax=threshold_max)
+        fig.colorbar(cax, ax=ax, label=f"{label} ({unit})")
+        ax.set_title(f"{label} - Layer {layer_selection}")
+        ax.axis('off')
+        st.pyplot(fig)
+
     if pressure_type == "Pressure Difference":
-        st.subheader("Pressure Difference (psi)")
-        norm_top = 1000
-        dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
-        st_folium(dp_map, width=1300, height=750)
+        tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
+        with tab1:
+            plot_static(dp_data, "Pressure Difference", "psi", norm_top=1000, use_log=True)
+        with tab2:
+            norm_top = 1000
+            dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
+            st_folium(dp_map, width=1500, height=750)
 
     elif pressure_type == "Pressure Gradient":
-        st.subheader("Pressure Gradient (psi/ft)")
-        norm_top = 0.5
-        pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
-        st_folium(pg_map, width=1300, height=750)
+        tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
+        with tab1:
+            plot_static(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, use_log=False)
+        with tab2:
+            norm_top = 0.5
+            pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
+            st_folium(pg_map, width=1500, height=750)
 
     elif pressure_type == "Both Pressure Difference and Pressure Gradient":
         col1, col2 = st.columns(2)
-
         with col1:
-            st.subheader("Pressure Difference (psi)")
-            norm_top = 1000
-            dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
-            st_folium(dp_map, width=800, height=500)
-
+            tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
+            with tab1:
+                plot_static(dp_data, "Pressure Difference", "psi", norm_top=1000, use_log=True)
+            with tab2:
+                norm_top = 1000
+                dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
+                st_folium(dp_map, width=750, height=500)
         with col2:
-            st.subheader("Pressure Gradient (psi/ft)")
-            norm_top = 0.5
-            pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
-            st_folium(pg_map, width=800, height=500)
+            tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
+            with tab1:
+                plot_static(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, use_log=False)
+            with tab2:
+                norm_top = 0.5
+                pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
+                st_folium(pg_map, width=750, height=500)
