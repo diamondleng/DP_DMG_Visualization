@@ -39,7 +39,7 @@ def load_data():
     SHMAX_SHAPEFILE = "NA_stress_SHmax_orientations.shp"
     EARTHQUAKE_CSV = "texnet_events.csv"
     DP_NPY = "DP.npy"
-    PG_NPY = "PG.npy"
+    PG_NPY = "New_PG_4.19.npy"
 
     gdf = gpd.read_file(AOI_SHAPEFILE).to_crs(epsg=4326)
     county_gdf = gpd.read_file(COUNTY_SHAPEFILE).to_crs(epsg=4326)
