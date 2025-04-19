@@ -13,7 +13,7 @@ st.set_page_config(layout='wide', page_title="Pressure Visualization Dashboard")
 st.title("Pressure Map with Induced Seismicity")
 
 # Sidebar selection
-pressure_type = st.sidebar.radio("Select Pressure Type:", ["None", "Pressure Difference", "Pressure Gradient", "Both Pressure Difference and Pressure Gradient"])
+pressure_type = st.sidebar.radio("Select Pressure Type:", ["None", "Pressure Difference", "Pressure Gradient"])
 formation_dict = {
     1: "Bell Canyon",
     2: "Bell Canyon",
@@ -39,7 +39,7 @@ def load_data():
     SHMAX_SHAPEFILE = "NA_stress_SHmax_orientations.shp"
     EARTHQUAKE_CSV = "texnet_events.csv"
     DP_NPY = "DP.npy"
-    PG_NPY = "New_PG_4.19.npy"
+    PG_NPY = "PG.npy"
 
     gdf = gpd.read_file(AOI_SHAPEFILE).to_crs(epsg=4326)
     county_gdf = gpd.read_file(COUNTY_SHAPEFILE).to_crs(epsg=4326)
@@ -124,7 +124,7 @@ else:
         </div>
         """
         folium.Marker(
-            location=[miny + 0.05, minx - 0.5],
+            location=[miny + 0.15, minx - 0.6],
             icon=folium.DivIcon(html=legend_html)
         ).add_to(m)
         return m
@@ -162,22 +162,3 @@ else:
             norm_top = 0.5
             pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
             st_folium(pg_map, width=1500, height=750)
-
-    elif pressure_type == "Both Pressure Difference and Pressure Gradient":
-        col1, col2 = st.columns(2)
-        with col1:
-            tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
-            with tab1:
-                plot_static(dp_data, "Pressure Difference", "psi", norm_top=1000, use_log=True)
-            with tab2:
-                norm_top = 1000
-                dp_map = create_map(dp_data, "Pressure Difference", "psi", norm_top=norm_top, use_log=True)
-                st_folium(dp_map, width=750, height=500)
-        with col2:
-            tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
-            with tab1:
-                plot_static(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, use_log=False)
-            with tab2:
-                norm_top = 0.5
-                pg_map = create_map(pg_data, "Pressure Gradient", "psi/ft", norm_top=norm_top, use_log=False)
-                st_folium(pg_map, width=750, height=500)
