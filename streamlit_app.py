@@ -216,7 +216,7 @@ if pressure_type == "Pressure Difference":
                     color='grey', weight=2
                 ).add_to(m)
 
-                legend_html = f"""
+        legend_html = f"""
         <div style='position: absolute; left: 20px; bottom: 20px; width: 270px;
                      background-color: white; padding: 10px; border:2px solid grey; z-index:9999;'>
         <b>Legend</b><br>
