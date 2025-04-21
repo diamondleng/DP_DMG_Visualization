@@ -224,17 +224,7 @@ if pressure_type == "Pressure Difference":
         scale = 'background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);'
         
 
-        cols = st.columns([4, 1])
-with cols[0]:
-    st_folium(m, width=1000, height=750)
-with cols[1]:
-    st.markdown("### Legend")
-    st.markdown(f"**{label}**")
-    st.markdown(f"<div style='background: linear-gradient(to right, blue, cyan, green, yellow, orange, red); height: 15px; width: 100%; margin-bottom: 5px;'></div>", unsafe_allow_html=True)
-    st.markdown("<div style='display: flex; justify-content: space-between;'>" + ''.join([f"<span>{t}</span>" for t in ticks]) + "</div>", unsafe_allow_html=True)
-    st.markdown("<br><span style='color:grey;'>● Earthquake Magnitude 3.0 - 3.5</span>", unsafe_allow_html=True)
-    st.markdown("<span style='color:red;'>● Earthquake Magnitude > 3.5</span>", unsafe_allow_html=True)
-    st.markdown("<span style='color:grey;'>━ SH_Max Orientation</span>", unsafe_allow_html=True)
+        
 
 elif pressure_type == "Pressure Gradient":
     tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
