@@ -52,8 +52,8 @@ def load_data():
     md_data = np.load(MD_NPY)
 
     # Use MD > 500 as a mask before applying outlier exclusion
-    pg_data = np.where(md_data > 200, pg_data, 0.43)
-    
+    pg_data = np.where(md_data > 200, pg_data, np.nan)
+    pg_data = pg_data[(pg_data > 0) & ~np.isnan(pg_data)]
 
     return gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data
 
