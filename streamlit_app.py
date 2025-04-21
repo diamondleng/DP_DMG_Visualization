@@ -217,7 +217,90 @@ if pressure_type == "Pressure Difference":
                 ).add_to(m)
 
                 legend_html = f"""
-        <div style='position: fixed; left: {minx - 0.6}vw; bottom: {miny - 0.05}vw; width: 270px; 
+        <div style='position: absolute; left: 20px; bottom: 20px; width: 270px;
+                     background-color: white; padding: 10px; border:2px solid grey; z-index:9999;'>
+        <b>Legend</b><br>
+        {label}:<br>
+        <div style='{scale} height: 15px; width: 100%; margin-bottom: 5px;'></div>
+        <div style='display: flex; justify-content: space-between;'>
+        {''.join([f'<span>{t}</span>' for t in ticks])}
+        </div><br>
+        <i style='color:grey;'>●</i> Earthquake Magnitude 3.0 - 3.5<br>
+        <i style='color:red;'>●</i> Earthquake Magnitude > 3.5<br>
+        <span style='color:grey;'>━</span> SH_Max Orientation
+        </div>
+        """
+        from branca.element import Template, MacroElement
+        legend = MacroElement()
+        legend._template = Template(legend_html)
+        m.get_root().add_child(legend)
+
+        st_folium(m, width=1200, height=750)
+
+elif pressure_type == "Pressure Gradient":
+    tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
+    with tab1:
+        plot_static(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, use_log=False)
+    with tab2:
+        m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9)
+        folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'fillOpacity': 0}).add_to(m)
+        folium.GeoJson(county_gdf, style_function=lambda x: {'color': 'gray', 'weight': 1, 'fillOpacity': 0}).add_to(m)
+
+        layer_data = pg_data[layer_selection - 1, :, :]
+        norm_top = 1.0
+        data_normalized = np.clip(layer_data, 0.4, norm_top)
+        cmap_range = (0.4, 1.0)
+
+        ny, nx = layer_data.shape
+        for i in range(ny - 1):
+            for j in range(nx - 1):
+                val = layer_data[i, j]
+                if not np.isnan(val) and md_data[layer_selection - 1, i, j] >= 1000:
+                    lon1, lon2 = x_coords[j], x_coords[j + 1]
+                    lat1, lat2 = y_coords[i], y_coords[i + 1]
+                    point = Point((lon1 + lon2) / 2, (lat1 + lat2) / 2)
+                    if gdf.unary_union.contains(point):
+                        norm_val = data_normalized[i, j]
+                        color = plt.cm.jet((norm_val - cmap_range[0]) / (cmap_range[1] - cmap_range[0]))
+                        color_hex = f"#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}"
+                        folium.Rectangle(
+                            bounds=[[lat1, lon1], [lat2, lon2]],
+                            fill=True,
+                            fill_color=color_hex,
+                            fill_opacity=0.7,
+                            stroke=False
+                        ).add_to(m)
+
+        for _, row in earthquake_df.iterrows():
+            lon, lat, mag = row['Longitude (WGS84)'], row['Latitude (WGS84)'], row['Local Magnitude']
+            if gdf.unary_union.contains(Point(lon, lat)) and mag >= 3.0:
+                color = 'grey' if mag < 3.5 else 'red'
+                folium.CircleMarker(
+                    location=[lat, lon],
+                    radius=mag**2,
+                    color='black',
+                    fill=True,
+                    fill_color=color,
+                    fill_opacity=0.5
+                ).add_to(m)
+
+        label = 'Pressure Gradient (psi/ft)'
+        scale = 'background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);'
+        ticks = ['0.4', '0.55', '0.7', '0.85', '1.0']
+        for _, row in shmax_gdf.iterrows():
+            if gdf.unary_union.contains(row.geometry):
+                start_point = row.geometry
+                angle = row['SHmax_or1_']
+                dist = 15 * 1609.34
+                end_lon = start_point.x + (dist / 111320) * np.sin(np.deg2rad(angle))
+                end_lat = start_point.y + (dist / 111320) * np.cos(np.deg2rad(angle))
+                folium.PolyLine(
+                    locations=[(start_point.y, start_point.x), (end_lat, end_lon)],
+                    color='grey', weight=2
+                ).add_to(m)
+
+        legend_html = f"""
+        <div style='position: absolute; left: 20px; bottom: 20px; width: 270px;
                      background-color: white; padding: 10px; border:2px solid grey; z-index:9999;'>
         <b>Legend</b><br>
         {label}:<br>
