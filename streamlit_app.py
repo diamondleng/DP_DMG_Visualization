@@ -112,7 +112,9 @@ def plot_static(data_array, label, unit, norm_top, use_log):
         cbar.set_ticklabels(['10', '100', '1000'])
         cbar.set_label(f"{label} ({unit})")
     else:
-        fig.colorbar(cax, ax=ax, label=f"{label} ({unit})")
+        cbar = fig.colorbar(cax, ax=ax)
+        cbar.set_ticks([0.4, 0.55, 0.7, 0.85, 1.0])
+        cbar.set_label(f"{label} ({unit})")
 
     # Plot county boundaries
     county_gdf[county_gdf.intersects(gdf.unary_union.buffer(width * 0.5))].boundary.plot(ax=ax, edgecolor='grey', linewidth=1)
