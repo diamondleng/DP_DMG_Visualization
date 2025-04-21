@@ -299,7 +299,7 @@ elif pressure_type == "Pressure Gradient":
         label = 'Pressure Gradient (psi/ft)'
         scale = 'background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);'
         legend_html = f"""
-        <div style='position: fixed; left: 20px; bottom: 20px; width: 270px; 
+        <div style='position: fixed; left: {minx - 0.6}vw; bottom: {miny - 0.05}vw; width: 270px; 
                      background-color: white; padding: 10px; border:2px solid grey; z-index:9999;'>
         <b>Legend</b><br>
         {label}:<br>
