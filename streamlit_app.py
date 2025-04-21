@@ -186,6 +186,61 @@ if pressure_type == "Pressure Difference":
                             stroke=False
                         ).add_to(m)
 
+        # Add earthquakes
+        for _, row in earthquake_df.iterrows():
+            lat, lon, mag = row['Latitude (WGS84)'], row['Longitude (WGS84)']
+            if gdf.unary_union.contains(Point(lon, lat)) and mag >= 3.0:
+                color = 'grey' if mag < 3.5 else 'red'
+                folium.CircleMarker(
+                    location=[lat, lon],
+                    radius=mag**2,
+                    color='black',
+                    fill=True,
+                    fill_color=color,
+                    fill_opacity=0.5
+                ).add_to(m)
+
+        # Add SHmax orientation lines
+        for _, row in shmax_gdf.iterrows():
+            if gdf.unary_union.contains(row.geometry):
+                start_point = row.geometry
+                angle = row['SHmax_or1_']
+                dist = 15 * 1609.34  # 15 miles in meters
+                end_lon = start_point.x + (dist / 111320) * np.sin(np.deg2rad(angle))
+                end_lat = start_point.y + (dist / 111320) * np.cos(np.deg2rad(angle))
+                folium.PolyLine(
+                    locations=[(start_point.y, start_point.x), (end_lat, end_lon)],
+                    color='grey', weight=2
+                ).add_to(m)
+
+        # Add colorbar legend
+        if pressure_type == "Pressure Difference":
+            ticks = ['0', '250', '500', '750', '1000']
+            label = 'Pressure Difference (psi)'
+        else:
+            ticks = ['0.4', '0.55', '0.7', '0.85', '1.0']
+            label = 'Pressure Gradient (psi/ft)'
+
+        scale = 'background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);'
+        legend_html = f"""
+        <div style='position: fixed; left: 20px; bottom: 20px; width: 270px; 
+                     background-color: white; padding: 10px; border:2px solid grey; z-index:9999;'>
+        <b>Legend</b><br>
+        {label}:<br>
+        <div style='{scale} height: 15px; width: 100%; margin-bottom: 5px;'></div>
+        <div style='display: flex; justify-content: space-between;'>
+        {''.join([f'<span>{t}</span>' for t in ticks])}
+        </div><br>
+        <i style='color:grey;'>●</i> Earthquake Magnitude 3.0 - 3.5<br>
+        <i style='color:red;'>●</i> Earthquake Magnitude > 3.5<br>
+        <span style='color:grey;'>━</span> SH_Max Orientation
+        </div>
+        """
+        from branca.element import Template, MacroElement
+        legend = MacroElement()
+        legend._template = Template(legend_html)
+        m.get_root().add_child(legend)
+
         st_folium(m, width=1200, height=750)
 
 elif pressure_type == "Pressure Gradient":
