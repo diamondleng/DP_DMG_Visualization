@@ -1,8 +1,8 @@
-streamlit
-geopandas
+streamlit>=1.20
+numpy
 pandas
 matplotlib
-numpy
+geopandas
 folium
 streamlit-folium
 shapely
