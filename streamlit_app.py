@@ -52,10 +52,16 @@ def load_data():
     md_data = np.load(MD_NPY)
 
     # Use MD > 500 as a mask before applying outlier exclusion
-    pg_data = np.where(md_data > 1000, pg_data, np.nan).astype(float)
-    pg_valid = pg_data[(pg_data > 0) & ~np.isnan(pg_data)]
-    q_low, q_high = np.percentile(pg_valid, [0, 100])
-    pg_data = np.where((pg_data >= q_low) & (pg_data <= q_high), pg_data, 0.43)
+    pg_data = np.where(md_data > 1000, pg_data, np.nan)
+
+    # Exclude outliers layer by layer
+    for i in range(pg_data.shape[0]):
+        layer = pg_data[i]
+        valid = layer[(layer > 0) & ~np.isnan(layer)]
+        if valid.size > 0:
+            q_low, q_high = np.percentile(valid, [0, 100])
+            mask = (layer >= q_low) & (layer <= q_high)
+            pg_data[i] = np.where(mask, layer, np.nan)
 
     return gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data
 
@@ -91,7 +97,7 @@ def plot_static(data_array, label, unit, norm_top, use_log):
             lon = x_coords[j]
             lat = y_coords[i]
             point = Point(lon, lat)
-            if gdf.unary_union.contains(point):
+            if gdf.unary_union.contains(point) and md_data[layer_selection - 1, i, j] >= 1000:
                 masked_data[i, j] = data_normalized[i, j]
 
     # Plot masked PG data
