@@ -82,9 +82,20 @@ def plot_static(data_array, label, unit, norm_top, use_log):
 
     fig, ax = plt.subplots(figsize=(12, 10))
 
-    # Plot PG data
+    # Mask out values outside AOI geometry
+    ny, nx = layer_data.shape
+    masked_data = np.full_like(layer_data, np.nan, dtype=float)
+    for i in range(ny):
+        for j in range(nx):
+            lon = x_coords[j]
+            lat = y_coords[i]
+            point = Point(lon, lat)
+            if gdf.unary_union.contains(point):
+                masked_data[i, j] = data_normalized[i, j]
+
+    # Plot masked PG data
     cax = ax.imshow(
-        data_normalized,
+        masked_data,
         cmap='jet',
         vmin=threshold_min, vmax=threshold_max,
         extent=[minx, maxx, miny, maxy],
