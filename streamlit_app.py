@@ -143,7 +143,50 @@ if pressure_type == "Pressure Difference":
     with tab1:
         plot_static(dp_data, "Pressure Difference", "psi", norm_top=1000, use_log=True)
     with tab2:
-        st.write("Dynamic plot is under development.")
+        # Create base map
+        m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9)
+
+        # Add AOI and county overlays
+        folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'fillOpacity': 0}).add_to(m)
+        folium.GeoJson(county_gdf, style_function=lambda x: {'color': 'gray', 'weight': 1, 'fillOpacity': 0}).add_to(m)
+
+        # Choose data and normalization
+        if pressure_type == "Pressure Difference":
+            layer_data = dp_data[layer_selection - 1, :, :]
+            norm_top = 1000
+            data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
+            cmap_range = (np.log1p(10 / norm_top) / np.log1p(1), np.log1p(1000 / norm_top) / np.log1p(1))
+        else:
+            layer_data = pg_data[layer_selection - 1, :, :]
+            norm_top = 1.0
+            data_normalized = np.clip(layer_data, 0.4, norm_top)
+            cmap_range = (0.4, 1.0)
+
+        # Render rectangles based on AOI and MD
+        ny, nx = layer_data.shape
+        for i in range(ny - 1):
+            for j in range(nx - 1):
+                val = layer_data[i, j]
+                if not np.isnan(val) and md_data[layer_selection - 1, i, j] >= 1000:
+                    lon1, lon2 = x_coords[j], x_coords[j + 1]
+                    lat1, lat2 = y_coords[i], y_coords[i + 1]
+                    point = Point((lon1 + lon2) / 2, (lat1 + lat2) / 2)
+                    if gdf.unary_union.contains(point):
+                        if pressure_type == "Pressure Difference":
+                            norm_val = np.log1p(val / norm_top) / np.log1p(1)
+                        else:
+                            norm_val = data_normalized[i, j]
+                        color = plt.cm.jet((norm_val - cmap_range[0]) / (cmap_range[1] - cmap_range[0]))
+                        color_hex = f"#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}"
+                        folium.Rectangle(
+                            bounds=[[lat1, lon1], [lat2, lon2]],
+                            fill=True,
+                            fill_color=color_hex,
+                            fill_opacity=0.7,
+                            stroke=False
+                        ).add_to(m)
+
+        st_folium(m, width=1200, height=750)
 
 elif pressure_type == "Pressure Gradient":
     tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
