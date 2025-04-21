@@ -104,8 +104,15 @@ def plot_static(data_array, label, unit, norm_top, use_log):
         origin='lower'
     )
 
-    # Add colorbar
-    fig.colorbar(cax, ax=ax, label=f"{label} ({unit})")
+    # Add colorbar with correct tick labels
+    if use_log:
+        cbar = fig.colorbar(cax, ax=ax)
+        tick_vals = [np.log1p(v / norm_top) / np.log1p(1) for v in [10, 100, 1000]]
+        cbar.set_ticks(tick_vals)
+        cbar.set_ticklabels(['10', '100', '1000'])
+        cbar.set_label(f"{label} ({unit})")
+    else:
+        fig.colorbar(cax, ax=ax, label=f"{label} ({unit})")
 
     # Plot county boundaries
     county_gdf[county_gdf.intersects(gdf.unary_union.buffer(width * 0.5))].boundary.plot(ax=ax, edgecolor='grey', linewidth=1)
