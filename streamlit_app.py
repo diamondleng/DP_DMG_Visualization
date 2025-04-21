@@ -222,24 +222,7 @@ if pressure_type == "Pressure Difference":
             label = 'Pressure Gradient (psi/ft)'
 
         scale = 'background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);'
-        legend_html = f"""
-        <div style='position: fixed; left: 20px; bottom: 20px; width: 270px; 
-                     background-color: white; padding: 10px; border:2px solid grey; z-index:9999;'>
-        <b>Legend</b><br>
-        {label}:<br>
-        <div style='{scale} height: 15px; width: 100%; margin-bottom: 5px;'></div>
-        <div style='display: flex; justify-content: space-between;'>
-        {''.join([f'<span>{t}</span>' for t in ticks])}
-        </div><br>
-        <i style='color:grey;'>●</i> Earthquake Magnitude 3.0 - 3.5<br>
-        <i style='color:red;'>●</i> Earthquake Magnitude > 3.5<br>
-        <span style='color:grey;'>━</span> SH_Max Orientation
-        </div>
-        """
-        from branca.element import Template, MacroElement
-        legend = MacroElement()
-        legend._template = Template(legend_html)
-        m.get_root().add_child(legend)
+        
 
         cols = st.columns([4, 1])
 with cols[0]:
