@@ -58,10 +58,10 @@ def load_data():
     q_low, q_high = np.percentile(pg_valid, [0, 100])
     pg_data = np.where((pg_data >= q_low) & (pg_data <= q_high), pg_data, 0.43)
 
-    return gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data
+    return gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data, md_data
 
 # Load the data before proceeding
-gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data = load_data()
+gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data, md_data = load_data()
 
 # Extend AOI bounds by 50%
 minx, miny, maxx, maxy = gdf.total_bounds
