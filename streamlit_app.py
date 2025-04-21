@@ -58,4 +58,37 @@ def load_data():
 
     return gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data
 
-# [rest of the code remains unchanged from canvas]
+minx, miny, maxx, maxy = -105, 102, -103, 104  # placeholder values, update with actual bounds from gdf if needed
+x_coords = np.linspace(minx, maxx, 100)  # adjust based on array shape
+y_coords = np.linspace(miny, maxy, 100)
+
+def plot_static(data_array, label, unit, norm_top, use_log):
+    layer_data = data_array[layer_selection - 1, :, :]
+    if use_log:
+        threshold_min, threshold_max = 10, 1000
+        data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
+    else:
+        threshold_min, threshold_max = np.nanpercentile(layer_data, [1, 99])
+        data_normalized = np.clip(layer_data, threshold_min, threshold_max)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    cax = ax.imshow(data_normalized, cmap='jet', vmin=threshold_min, vmax=threshold_max, extent=[minx, maxx, miny, maxy])
+    fig.colorbar(cax, ax=ax, label=f"{label} ({unit})")
+    ax.set_title(f"{label} - Layer {layer_selection}")
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    st.pyplot(fig)
+
+if pressure_type == "Pressure Difference":
+    tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
+    with tab1:
+        plot_static(dp_data, "Pressure Difference", "psi", norm_top=1000, use_log=True)
+    with tab2:
+        st.write("Dynamic plot is under development.")
+
+elif pressure_type == "Pressure Gradient":
+    tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
+    with tab1:
+        plot_static(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, use_log=False)
+    with tab2:
+        st.write("Dynamic plot is under development.")
