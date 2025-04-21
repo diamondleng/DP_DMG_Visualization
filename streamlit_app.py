@@ -92,7 +92,7 @@ def plot_static(data_array, label, unit, norm_top, use_log):
             lon = x_coords[j]
             lat = y_coords[i]
             point = Point(lon, lat)
-            if gdf.unary_union.contains(point) and md_data[layer_selection - 1, i, j] >= 1000:
+            if gdf.unary_union.contains(point) and (pressure_type != "Pressure Gradient" or md_data[layer_selection - 1, i, j] >= 1000):
                 masked_data[i, j] = data_normalized[i, j]
 
     # Plot masked PG data
@@ -201,6 +201,9 @@ if pressure_type == "Pressure Difference":
                 ).add_to(m)
 
         # Add SHmax orientation lines
+        label = 'Pressure Difference (psi)'
+        scale = 'background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);'
+        ticks = ['0', '250', '500', '750', '1000']
         for _, row in shmax_gdf.iterrows():
             if gdf.unary_union.contains(row.geometry):
                 start_point = row.geometry
