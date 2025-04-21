@@ -74,8 +74,9 @@ y_coords = np.linspace(miny, maxy, dp_data.shape[1])
 def plot_static(data_array, label, unit, norm_top, use_log):
     layer_data = data_array[layer_selection - 1, :, :]
     if use_log:
-        threshold_min, threshold_max = 10, 1000
+        
         data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
+        threshold_min, threshold_max = np.min(data_normalized), np.max(data_normalized)
     else:
         threshold_min, threshold_max = 0.4, 1.0
         data_normalized = np.clip(layer_data, threshold_min, threshold_max)
