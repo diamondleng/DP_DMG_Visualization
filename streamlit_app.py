@@ -58,9 +58,13 @@ def load_data():
 
     return gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data
 
-minx, miny, maxx, maxy = -105, 102, -103, 104  # placeholder values, update with actual bounds from gdf if needed
-x_coords = np.linspace(minx, maxx, 100)  # adjust based on array shape
-y_coords = np.linspace(miny, maxy, 100)
+# Load the data before proceeding
+gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data = load_data()
+
+# Get bounds from AOI for accurate plotting
+minx, miny, maxx, maxy = gdf.total_bounds
+x_coords = np.linspace(minx, maxx, dp_data.shape[2])
+y_coords = np.linspace(miny, maxy, dp_data.shape[1])
 
 def plot_static(data_array, label, unit, norm_top, use_log):
     layer_data = data_array[layer_selection - 1, :, :]
