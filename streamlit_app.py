@@ -107,9 +107,9 @@ def plot_static(data_array, label, unit, norm_top, use_log):
     # Add colorbar with correct tick labels
     if use_log:
         cbar = fig.colorbar(cax, ax=ax)
-        tick_vals = [np.log1p(v / norm_top) / np.log1p(1) for v in [10, 100, 1000]]
+        tick_vals = [np.log1p(v / norm_top) / np.log1p(1) for v in [0, 250, 500, 750, 1000]]
         cbar.set_ticks(tick_vals)
-        cbar.set_ticklabels(['10', '100', '1000'])
+        cbar.set_ticklabels(['0', '250', '500', '750', '1000'])
         cbar.set_label(f"{label} ({unit})")
     else:
         cbar = fig.colorbar(cax, ax=ax)
