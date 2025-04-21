@@ -5,7 +5,7 @@ import folium
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from shapely.geometry import Point
+from shapely.geometry import Point, box
 from streamlit_folium import st_folium
 
 # Streamlit setup
@@ -61,8 +61,12 @@ def load_data():
 # Load the data before proceeding
 gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data = load_data()
 
-# Get bounds from AOI for accurate plotting
+# Extend AOI bounds by 50%
 minx, miny, maxx, maxy = gdf.total_bounds
+width = maxx - minx
+height = maxy - miny
+ext_minx, ext_maxx = minx - 0.5 * width, maxx + 0.5 * width
+ext_miny, ext_maxy = miny - 0.5 * height, maxy + 0.5 * height
 x_coords = np.linspace(minx, maxx, dp_data.shape[2])
 y_coords = np.linspace(miny, maxy, dp_data.shape[1])
 
@@ -72,15 +76,43 @@ def plot_static(data_array, label, unit, norm_top, use_log):
         threshold_min, threshold_max = 10, 1000
         data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
     else:
-        threshold_min, threshold_max = np.nanpercentile(layer_data, [1, 99])
+        threshold_min, threshold_max = 0.4, 1.0
         data_normalized = np.clip(layer_data, threshold_min, threshold_max)
 
-    fig, ax = plt.subplots(figsize=(10, 8))
-    cax = ax.imshow(data_normalized, cmap='jet', vmin=threshold_min, vmax=threshold_max, extent=[minx, maxx, miny, maxy])
+    fig, ax = plt.subplots(figsize=(12, 10))
+
+    # Plot PG data
+    cax = ax.imshow(
+        data_normalized,
+        cmap='jet',
+        vmin=threshold_min, vmax=threshold_max,
+        extent=[minx, maxx, miny, maxy],
+        origin='lower'
+    )
+
+    # Add colorbar
     fig.colorbar(cax, ax=ax, label=f"{label} ({unit})")
-    ax.set_title(f"{label} - Layer {layer_selection}")
+
+    # Plot county boundaries
+    county_gdf.boundary.plot(ax=ax, edgecolor='grey', linewidth=1)
+
+    # Annotate county names
+    for _, row in county_gdf.iterrows():
+        if row['geometry'].centroid.is_valid:
+            ax.text(row['geometry'].centroid.x, row['geometry'].centroid.y,
+                    s=row['CNTY_NM'], fontsize=8, color='black', ha='center')
+
+    # Draw AOI boundary in green
+    gdf.boundary.plot(ax=ax, edgecolor='green', linewidth=2)
+
+    # Set extended limits
+    ax.set_xlim(ext_minx, ext_maxx)
+    ax.set_ylim(ext_miny, ext_maxy)
+
+    # Label axes
     ax.set_xlabel("Longitude")
     ax.set_ylabel("Latitude")
+    ax.set_title(f"{label} - Layer {layer_selection}")
     st.pyplot(fig)
 
 if pressure_type == "Pressure Difference":
