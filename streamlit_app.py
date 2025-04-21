@@ -51,7 +51,8 @@ def load_data():
     pg_data = np.load(PG_NPY)
     md_data = np.load(MD_NPY)
 
-    # Replace MD filter with outlier exclusion for PG
+    # Use MD > 500 as a mask before applying outlier exclusion
+    pg_data = np.where(md_data > 500, pg_data, np.nan)
     pg_valid = pg_data[(pg_data > 0) & ~np.isnan(pg_data)]
     q_low, q_high = np.percentile(pg_valid, [1, 99])
     pg_data = np.where((pg_data >= q_low) & (pg_data <= q_high), pg_data, np.nan)
