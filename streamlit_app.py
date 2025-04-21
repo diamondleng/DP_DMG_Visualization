@@ -52,10 +52,10 @@ def load_data():
     md_data = np.load(MD_NPY)
 
     # Use MD > 500 as a mask before applying outlier exclusion
-    pg_data = np.where(md_data > 500, pg_data, np.nan)
+    pg_data = np.where(md_data > 500, pg_data, 0.43)
     pg_valid = pg_data[(pg_data > 0) & ~np.isnan(pg_data)]
     q_low, q_high = np.percentile(pg_valid, [1, 99])
-    pg_data = np.where((pg_data >= q_low) & (pg_data <= q_high), pg_data, np.nan)
+    pg_data = np.where((pg_data >= q_low) & (pg_data <= q_high), pg_data, 0.43)
 
     return gdf, county_gdf, shmax_gdf, earthquake_df, dp_data, pg_data
 
@@ -95,10 +95,10 @@ def plot_static(data_array, label, unit, norm_top, use_log):
     fig.colorbar(cax, ax=ax, label=f"{label} ({unit})")
 
     # Plot county boundaries
-    county_gdf.boundary.plot(ax=ax, edgecolor='grey', linewidth=1)
+    county_gdf[county_gdf.intersects(gdf.unary_union.buffer(width * 0.5))].boundary.plot(ax=ax, edgecolor='grey', linewidth=1)
 
     # Annotate county names
-    for _, row in county_gdf.iterrows():
+    for _, row in county_gdf[county_gdf.intersects(gdf.unary_union.buffer(width * 0.5))].iterrows():
         if row['geometry'].centroid.is_valid:
             ax.text(row['geometry'].centroid.x, row['geometry'].centroid.y,
                     s=row['CNTY_NM'], fontsize=8, color='black', ha='center')
