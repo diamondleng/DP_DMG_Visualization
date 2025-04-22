@@ -52,7 +52,7 @@ def load_data():
     md_data = np.load(MD_NPY)
 
     # Use MD > 500 as a mask before applying outlier exclusion
-    pg_data = np.where(md_data > 1300, pg_data, np.nan)
+    pg_data = np.where(md_data > 1500, pg_data, np.nan)
     # Use MD > 500 as a mask before applying outlier exclusion
     pg_valid = pg_data[(pg_data > 0) & ~np.isnan(pg_data)].astype(float)
     q_low, q_high = np.percentile(pg_valid, [0, 100])
@@ -92,7 +92,7 @@ def plot_static(data_array, label, unit, norm_top, use_log):
             lon = x_coords[j]
             lat = y_coords[i]
             point = Point(lon, lat)
-            if gdf.unary_union.contains(point) and (pressure_type != "Pressure Gradient" or md_data[layer_selection - 1, i, j] >= 1300):
+            if gdf.unary_union.contains(point) and (pressure_type != "Pressure Gradient" or md_data[layer_selection - 1, i, j] >= 1500):
                 masked_data[i, j] = data_normalized[i, j]
 
     # Plot masked PG data
