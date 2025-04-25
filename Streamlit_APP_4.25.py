@@ -301,9 +301,7 @@ elif pressure_type == "PG (Constant Compressibility Test)":
             st.markdown("<br><span style='color:grey;'>● Earthquake Magnitude 3.0 - 3.5</span>", unsafe_allow_html=True)
             st.markdown("<span style='color:red;'>● Earthquake Magnitude > 3.5</span>", unsafe_allow_html=True)
             st.markdown("<span style='color:grey;'>━ SH_Max Orientation</span>", unsafe_allow_html=True)
-
-    st.markdown("**Note:** This plot excludes the outcrop area in the west of the Delaware Mountain Group (DMG).")
-n("### Legend")
+            st.markdown("**Note:** This plot excludes the outcrop area in the west of the Delaware Mountain Group (DMG).")
             st.markdown(f"**{label}**")
             st.markdown(f"<div style='{scale} height: 15px; width: 100%; margin-bottom: 5px;'></div>", unsafe_allow_html=True)
             st.markdown("<div style='display: flex; justify-content: space-between;'>" + ''.join([f"<span>{t}</span>" for t in ticks]) + "</div>", unsafe_allow_html=True)
