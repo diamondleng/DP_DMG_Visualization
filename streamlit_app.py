@@ -151,7 +151,6 @@ if pressure_type == "Pressure Difference":
     with tab1:
         plot_static(dp_data, "Pressure Difference", "psi", norm_top=1000, use_log=True)
     with tab2:
-        # Create base map
         m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9)
 
         # Add AOI and county overlays
