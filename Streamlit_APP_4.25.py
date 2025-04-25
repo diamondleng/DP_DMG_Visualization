@@ -147,29 +147,20 @@ def plot_static(data_array, label, unit, norm_top, use_log):
     st.pyplot(fig)
 
 if pressure_type == "Pressure Difference":
-    tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map"])
+    tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map (Slow Response)"])
     with tab1:
         plot_static(dp_data, "Pressure Difference", "psi", norm_top=1000, use_log=True)
     with tab2:
         m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9)
 
-        # Add AOI and county overlays
         folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'fillOpacity': 0}).add_to(m)
         folium.GeoJson(county_gdf, style_function=lambda x: {'color': 'gray', 'weight': 1, 'fillOpacity': 0}).add_to(m)
 
-        # Choose data and normalization
-        if pressure_type == "Pressure Difference":
-            layer_data = dp_data[layer_selection - 1, :, :]
-            norm_top = 1000
-            data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
-            cmap_range = (np.log1p(10 / norm_top) / np.log1p(1), np.log1p(1000 / norm_top) / np.log1p(1))
-        else:
-            layer_data = pg_data[layer_selection - 1, :, :]
-            norm_top = 1.0
-            data_normalized = np.clip(layer_data, 0.4, norm_top)
-            cmap_range = (0.4, 1.0)
+        layer_data = dp_data[layer_selection - 1, :, :]
+        norm_top = 1000
+        data_normalized = np.log1p(layer_data / norm_top) / np.log1p(1)
+        cmap_range = (np.log1p(10 / norm_top) / np.log1p(1), np.log1p(1000 / norm_top) / np.log1p(1))
 
-        # Render rectangles based on AOI and MD
         ny, nx = layer_data.shape
         for i in range(ny - 1):
             for j in range(nx - 1):
@@ -179,10 +170,7 @@ if pressure_type == "Pressure Difference":
                     lat1, lat2 = y_coords[i], y_coords[i + 1]
                     point = Point((lon1 + lon2) / 2, (lat1 + lat2) / 2)
                     if gdf.unary_union.contains(point):
-                        if pressure_type == "Pressure Difference":
-                            norm_val = np.log1p(val / norm_top) / np.log1p(1)
-                        else:
-                            norm_val = data_normalized[i, j]
+                        norm_val = np.log1p(val / norm_top) / np.log1p(1)
                         color = plt.cm.jet((norm_val - cmap_range[0]) / (cmap_range[1] - cmap_range[0]))
                         color_hex = f"#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}"
                         folium.Rectangle(
@@ -193,7 +181,6 @@ if pressure_type == "Pressure Difference":
                             stroke=False
                         ).add_to(m)
 
-        # Add earthquakes
         for _, row in earthquake_df.iterrows():
             lon, lat, mag = row['Longitude (WGS84)'], row['Latitude (WGS84)'], row['Local Magnitude']
             if gdf.unary_union.contains(Point(lon, lat)) and mag >= 3.0:
@@ -207,15 +194,11 @@ if pressure_type == "Pressure Difference":
                     fill_opacity=0.5
                 ).add_to(m)
 
-        # Add SHmax orientation lines
-        label = 'Pressure Difference (psi)'
-        scale = 'background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);'
-        ticks = ['0', '250', '500', '750', '1000']
         for _, row in shmax_gdf.iterrows():
             if gdf.unary_union.contains(row.geometry):
                 start_point = row.geometry
                 angle = row['SHmax_or1_']
-                dist = 15 * 1609.34  # 15 miles in meters
+                dist = 15 * 1609.34
                 end_lon = start_point.x + (dist / 111320) * np.sin(np.deg2rad(angle))
                 end_lat = start_point.y + (dist / 111320) * np.cos(np.deg2rad(angle))
                 folium.PolyLine(
@@ -223,29 +206,21 @@ if pressure_type == "Pressure Difference":
                     color='grey', weight=2
                 ).add_to(m)
 
-        legend_html = f"""
-        <div style='position: absolute; left: 20px; bottom: 20px; width: 270px;
-                     background-color: white; padding: 10px; border:2px solid grey; z-index:9999;'>
-        <b>Legend</b><br>
-        {label}:<br>
-        <div style='{scale} height: 15px; width: 100%; margin-bottom: 5px;'></div>
-        <div style='display: flex; justify-content: space-between;'>
-        {''.join([f'<span>{t}</span>' for t in ticks])}
-        </div><br>
-        <i style='color:grey;'>●</i> Earthquake Magnitude 3.0 - 3.5<br>
-        <i style='color:red;'>●</i> Earthquake Magnitude > 3.5<br>
-        <span style='color:grey;'>━</span> SH_Max Orientation
-        </div>
-        """
-        from branca.element import Template, MacroElement
-        legend = MacroElement()
-        legend._template = Template(legend_html)
-        m.get_root().add_child(legend)
+        label = 'Pressure Difference (psi)'
+        scale = 'background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);'
+        ticks = ['0', '250', '500', '750', '1000']
 
         cols = st.columns([4, 1])
         with cols[0]:
             st_folium(m, width=1000, height=750)
         with cols[1]:
+            st.markdown("### Legend")
+            st.markdown(f"**{label}**")
+            st.markdown(f"<div style='{scale} height: 15px; width: 100%; margin-bottom: 5px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='display: flex; justify-content: space-between;'>" + ''.join([f"<span>{t}</span>" for t in ticks]) + "</div>", unsafe_allow_html=True)
+            st.markdown("<br><span style='color:grey;'>● Earthquake Magnitude 3.0 - 3.5</span>", unsafe_allow_html=True)
+            st.markdown("<span style='color:red;'>● Earthquake Magnitude > 3.5</span>", unsafe_allow_html=True)
+            st.markdown("<span style='color:grey;'>━ SH_Max Orientation</span>", unsafe_allow_html=True)
             
 
 elif pressure_type == "PG (Constant Compressibility Test)":
