@@ -13,7 +13,15 @@ st.set_page_config(layout='wide', page_title="Pressure Visualization Dashboard")
 st.title("Pressure Map with Induced Seismicity")
 
 # Sidebar selection
-pressure_type = st.sidebar.radio("Select Pressure Type:", ["None", "Pressure Difference", "Pressure Gradient"])
+pressure_type = st.sidebar.radio("Select Pressure Type:", ["None", "Pressure Difference", "Pressure Gradient", "PG (Constant Compressibility Test)"])
+
+compressibility_files = {
+    "0.75e-6": np.load("/mnt/data/PG_0.75.npy"),
+    "1.0e-6": np.load("/mnt/data/PG_1.npy"),
+    "2.5e-6": np.load("/mnt/data/PG_2.5.npy"),
+    "5.0e-6": np.load("/mnt/data/PG_5.npy"),
+    "7.5e-6": np.load("/mnt/data/PG_7.5.npy")
+}
 formation_dict = {
     1: "Bell Canyon",
     2: "Bell Canyon",
@@ -234,6 +242,87 @@ if pressure_type == "Pressure Difference":
         legend = MacroElement()
         legend._template = Template(legend_html)
         m.get_root().add_child(legend)
+
+        cols = st.columns([4, 1])
+        with cols[0]:
+            st_folium(m, width=1000, height=750)
+        with cols[1]:
+            st.markdown("### Legend")
+            st.markdown(f"**{label}**")
+            st.markdown(f"<div style='{scale} height: 15px; width: 100%; margin-bottom: 5px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='display: flex; justify-content: space-between;'>" + ''.join([f"<span>{t}</span>" for t in ticks]) + "</div>", unsafe_allow_html=True)
+            st.markdown("<br><span style='color:grey;'>● Earthquake Magnitude 3.0 - 3.5</span>", unsafe_allow_html=True)
+            st.markdown("<span style='color:red;'>● Earthquake Magnitude > 3.5</span>", unsafe_allow_html=True)
+            st.markdown("<span style='color:grey;'>━ SH_Max Orientation</span>", unsafe_allow_html=True)
+
+elif pressure_type == "PG (Constant Compressibility Test)":
+    comp_choice = st.sidebar.select_slider(
+        "Select Compressibility (1/psi):",
+        options=["0.75e-6", "1.0e-6", "2.5e-6", "5.0e-6", "7.5e-6"]
+    )
+    pg_data = compressibility_files[comp_choice]
+    st.markdown(f"**Note:** Showing results for Compressibility = {comp_choice} 1/psi")
+    tab1, tab2 = st.tabs(["Static Plot", "Dynamic Map (Slow Response)"])
+    with tab1:
+        plot_static(pg_data, "Pressure Gradient", "psi/ft", norm_top=0.5, use_log=False)
+    with tab2:
+                m = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=9)
+        folium.GeoJson(gdf, style_function=lambda x: {'color': 'green', 'weight': 2, 'fillOpacity': 0}).add_to(m)
+        folium.GeoJson(county_gdf, style_function=lambda x: {'color': 'gray', 'weight': 1, 'fillOpacity': 0}).add_to(m)
+
+        layer_data = pg_data[layer_selection - 1, :, :]
+        norm_top = 1.0
+        data_normalized = np.clip(layer_data, 0.4, norm_top)
+        cmap_range = (0.4, 1.0)
+
+        ny, nx = layer_data.shape
+        for i in range(ny - 1):
+            for j in range(nx - 1):
+                val = layer_data[i, j]
+                if not np.isnan(val):
+                    lon1, lon2 = x_coords[j], x_coords[j + 1]
+                    lat1, lat2 = y_coords[i], y_coords[i + 1]
+                    point = Point((lon1 + lon2) / 2, (lat1 + lat2) / 2)
+                    if gdf.unary_union.contains(point):
+                        norm_val = data_normalized[i, j]
+                        color = plt.cm.jet((norm_val - cmap_range[0]) / (cmap_range[1] - cmap_range[0]))
+                        color_hex = f"#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}"
+                        folium.Rectangle(
+                            bounds=[[lat1, lon1], [lat2, lon2]],
+                            fill=True,
+                            fill_color=color_hex,
+                            fill_opacity=0.7,
+                            stroke=False
+                        ).add_to(m)
+
+        for _, row in earthquake_df.iterrows():
+            lon, lat, mag = row['Longitude (WGS84)'], row['Latitude (WGS84)'], row['Local Magnitude']
+            if gdf.unary_union.contains(Point(lon, lat)) and mag >= 3.0:
+                color = 'grey' if mag < 3.5 else 'red'
+                folium.CircleMarker(
+                    location=[lat, lon],
+                    radius=mag**2,
+                    color='black',
+                    fill=True,
+                    fill_color=color,
+                    fill_opacity=0.5
+                ).add_to(m)
+
+        label = 'Pressure Gradient (psi/ft)'
+        scale = 'background: linear-gradient(to right, blue, cyan, green, yellow, orange, red);'
+        ticks = ['0.4', '0.55', '0.7', '0.85', '1.0']
+
+        for _, row in shmax_gdf.iterrows():
+            if gdf.unary_union.contains(row.geometry):
+                start_point = row.geometry
+                angle = row['SHmax_or1_']
+                dist = 15 * 1609.34
+                end_lon = start_point.x + (dist / 111320) * np.sin(np.deg2rad(angle))
+                end_lat = start_point.y + (dist / 111320) * np.cos(np.deg2rad(angle))
+                folium.PolyLine(
+                    locations=[(start_point.y, start_point.x), (end_lat, end_lon)],
+                    color='grey', weight=2
+                ).add_to(m)
 
         cols = st.columns([4, 1])
         with cols[0]:
