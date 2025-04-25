@@ -16,11 +16,11 @@ st.title("Pressure Map with Induced Seismicity")
 pressure_type = st.sidebar.radio("Select Pressure Type:", ["None", "Pressure Difference", "Pressure Gradient", "PG (Constant Compressibility Test)"])
 
 compressibility_files = {
-    "0.75e-6": np.load("/mnt/data/PG_0.75.npy"),
-    "1.0e-6": np.load("/mnt/data/PG_1.npy"),
-    "2.5e-6": np.load("/mnt/data/PG_2.5.npy"),
-    "5.0e-6": np.load("/mnt/data/PG_5.npy"),
-    "7.5e-6": np.load("/mnt/data/PG_7.5.npy")
+    "0.75e-6": np.load("PG_0.75.npy"),
+    "1.0e-6": np.load("PG_1.npy"),
+    "2.5e-6": np.load("PG_2.5.npy"),
+    "5.0e-6": np.load("PG_5.npy"),
+    "7.5e-6": np.load("PG_7.5.npy")
 }
 formation_dict = {
     1: "Bell Canyon",
