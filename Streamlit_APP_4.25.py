@@ -100,7 +100,7 @@ def plot_static(data_array, label, unit, norm_top, use_log):
             lon = x_coords[j]
             lat = y_coords[i]
             point = Point(lon, lat)
-            if gdf.unary_union.contains(point) and (pressure_type != "Pressure Gradient" or md_data[layer_selection - 1, i, j] >= 1300):
+            if gdf.unary_union.contains(point) and  md_data[layer_selection - 1, i, j] >= 1300:
                 masked_data[i, j] = data_normalized[i, j]
 
     # Plot masked PG data
