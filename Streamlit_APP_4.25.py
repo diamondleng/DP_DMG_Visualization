@@ -169,7 +169,7 @@ if pressure_type == "Pressure Difference":
                     lon1, lon2 = x_coords[j], x_coords[j + 1]
                     lat1, lat2 = y_coords[i], y_coords[i + 1]
                     point = Point((lon1 + lon2) / 2, (lat1 + lat2) / 2)
-                    if gdf.unary_union.contains(point):
+                    if gdf.unary_union.contains(point) and md_data[layer_selection - 1, i, j] >= 1300:
                         norm_val = np.log1p(val / norm_top) / np.log1p(1)
                         color = plt.cm.jet((norm_val - cmap_range[0]) / (cmap_range[1] - cmap_range[0]))
                         color_hex = f"#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}"
@@ -321,7 +321,7 @@ elif pressure_type == "Pressure Gradient":
         for i in range(ny - 1):
             for j in range(nx - 1):
                 val = layer_data[i, j]
-                if not np.isnan(val) and md_data[layer_selection - 1, i, j] >= 1000:
+                if not np.isnan(val) and md_data[layer_selection - 1, i, j] >= 1300:
                     lon1, lon2 = x_coords[j], x_coords[j + 1]
                     lat1, lat2 = y_coords[i], y_coords[i + 1]
                     point = Point((lon1 + lon2) / 2, (lat1 + lat2) / 2)
